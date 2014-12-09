@@ -1,189 +1,176 @@
-// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
-// Jad home page: http://www.geocities.com/kpdus/jad.html
-// Decompiler options: braces fieldsfirst space lnc 
-
 package com.RSen.LionTime;
 
-import android.content.Context;
-import android.content.res.Resources;
-import android.widget.Toast;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Set;
 
-public class Schedule
-{
+import android.content.Context;
+import android.widget.Toast;
 
-    public static void addIrregularSchedule(Context context, Calendar calendar, int i)
-    {
-        HashMap hashmap = readIrregularsFromFile(context);
-        Calendar calendar1 = Calendar.getInstance();
-        calendar1.clear();
-        calendar1.set(calendar.get(1), calendar.get(2), calendar.get(5));
-        if (getRegularScheduleType(calendar) != i)
-        {
-            hashmap.put(calendar1, Integer.valueOf(i));
-        } else
-        {
-            hashmap.remove(calendar1);
-        }
-        writeIrregularsToFile(context, hashmap);
-    }
+public class Schedule {
+	// private static HashMap<Calendar, Integer> irregularSchedules = new
+	// HashMap<Calendar, Integer>();
+	private static final String FILENAME = "irregular_schedules";
+	public static final int TYPE_REGULAR = 0;
+	public static final int TYPE_WED = 1;
+	public static final int TYPE_THU = 2;
+	public static final int TYPE_B = 3;
+	public static final int TYPE_NOSCHOOL = 4;
 
-    public static int checkIrregular(Context context, Calendar calendar)
-    {
-        int i = -1;
-        Object obj;
-        int j;
-        try
-        {
-            HashMap hashmap = readIrregularsFromFile(context);
-            Calendar calendar1 = Calendar.getInstance();
-            calendar1.clear();
-            calendar1.set(calendar.get(1), calendar.get(2), calendar.get(5));
-            obj = hashmap.get(calendar1);
-        }
-        catch (Exception exception)
-        {
-            return i;
-        }
-        if (obj == null)
-        {
-            break MISSING_BLOCK_LABEL_65;
-        }
-        j = ((Integer)obj).intValue();
-        i = j;
-        return i;
-    }
+	public static String getReadableScheduleType(Context context, Calendar cal) {
+		int scheduleType = getScheduleType(context, cal);
+		String[] schedules = context.getResources().getStringArray(
+				R.array.Schedules);
+		return schedules[scheduleType];
+	}
 
-    public static void cleanIrregularSchedules(Context context)
-    {
-        HashMap hashmap = readIrregularsFromFile(context);
-        Set set = hashmap.keySet();
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(5, -1);
-        Iterator iterator = set.iterator();
-        do
-        {
-            Calendar calendar1;
-            do
-            {
-                if (!iterator.hasNext())
-                {
-                    writeIrregularsToFile(context, hashmap);
-                    return;
-                }
-                calendar1 = (Calendar)iterator.next();
-            } while (!calendar.after(calendar1));
-            hashmap.remove(calendar1);
-        } while (true);
-    }
+	// deletes all irregular schedules before today to free up space
+	public static void cleanIrregularSchedules(Context context) {
+		HashMap<Calendar, Integer> irregularSchedules = readIrregularsFromFile(context);
+		Set<Calendar> dates = irregularSchedules.keySet();
+		Calendar now = Calendar.getInstance();
+		now.add(Calendar.DATE, -1);
+		for (Calendar date : dates) {
+			if (now.after(date)) {
+				irregularSchedules.remove(date);
+			}
+		}
+		writeIrregularsToFile(context, irregularSchedules);
+	}
 
-    public static String getReadableScheduleType(Context context, int i)
-    {
-        return context.getResources().getStringArray(0x7f050000)[i];
-    }
+	public static String getReadableScheduleType(Context context,
+			int scheduleType) {
+		String[] schedules = context.getResources().getStringArray(
+				R.array.Schedules);
+		return schedules[scheduleType];
+	}
 
-    public static String getReadableScheduleType(Context context, Calendar calendar)
-    {
-        int i = getScheduleType(context, calendar);
-        return context.getResources().getStringArray(0x7f050000)[i];
-    }
+	private static int getRegularScheduleType(Calendar cal) {
+		int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
+		if (dayOfWeek == Calendar.WEDNESDAY) // wednesday
+		{
+			return TYPE_WED;
+		} else if (dayOfWeek == Calendar.THURSDAY) // Thursday
+		{
+			return TYPE_THU;
+		} else if (dayOfWeek == Calendar.SATURDAY
+				|| dayOfWeek == Calendar.SUNDAY) {
+			return TYPE_NOSCHOOL;
+		} else {
+			return TYPE_REGULAR;
+		}
+	}
 
-    private static int getRegularScheduleType(Calendar calendar)
-    {
-        int i = calendar.get(7);
-        if (i == 4)
-        {
-            return 1;
-        }
-        if (i == 5)
-        {
-            return 2;
-        }
-        return i != 7 && i != 1 ? 0 : 4;
-    }
+	public static int getScheduleType(Context context, Calendar cal) {
+		int irregularCode = checkIrregular(context, cal);
+		int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
+		if (irregularCode != -1) {
+			return irregularCode;
+		} else if (dayOfWeek == Calendar.WEDNESDAY) // wednesday
+		{
+			return TYPE_WED;
+		} else if (dayOfWeek == Calendar.THURSDAY) // Thursday
+		{
+			return TYPE_THU;
+		} else if (dayOfWeek == Calendar.SATURDAY
+				|| dayOfWeek == Calendar.SUNDAY) {
+			return TYPE_NOSCHOOL;
+		} else {
+			return TYPE_REGULAR;
+		}
+	}
 
-    public static int[] getScheduleTimes(Context context)
-    {
-        Calendar calendar = Calendar.getInstance();
-        int i = checkIrregular(context, calendar);
-        if (i == 3)
-        {
-            return (new int[] {
-                490, 540, 590, 640, 690, 740, 790, 810, 860, 905
-            });
-        }
-        if (calendar.get(7) == 4 && i == -1 || i == 1)
-        {
-            return (new int[] {
-                490, 575, 655, 735, 775, 830, 905
-            });
-        }
-        if (calendar.get(7) == 5 && i == -1 || i == 2)
-        {
-            return (new int[] {
-                490, 575, 655, 735, 775, 855, 905
-            });
-        } else
-        {
-            return (new int[] {
-                490, 540, 605, 655, 705, 755, 805, 855, 900
-            });
-        }
-    }
+	public static void addIrregularSchedule(Context context, Calendar cal,
+			int scheduleType) {
+		HashMap<Calendar, Integer> irregularSchedules = readIrregularsFromFile(context);
+		Calendar calSimple = Calendar.getInstance();
+		calSimple.clear();
+		calSimple.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH),
+				cal.get(Calendar.DATE));
+		// check if normal
+		if (getRegularScheduleType(cal) != scheduleType) {
+			irregularSchedules.put(calSimple, scheduleType);
 
-    public static int getScheduleType(Context context, Calendar calendar)
-    {
-        int i = checkIrregular(context, calendar);
-        int j = calendar.get(7);
-        if (i != -1)
-        {
-            return i;
-        }
-        if (j == 4)
-        {
-            return 1;
-        }
-        if (j == 5)
-        {
-            return 2;
-        }
-        return j != 7 && j != 1 ? 0 : 4;
-    }
+		} else {
+			irregularSchedules.remove(calSimple);
+		}
+		writeIrregularsToFile(context, irregularSchedules);
 
-    private static HashMap readIrregularsFromFile(Context context)
-    {
-        HashMap hashmap;
-        try
-        {
-            ObjectInputStream objectinputstream = new ObjectInputStream(context.openFileInput("irregular_schedules"));
-            Object obj = objectinputstream.readObject();
-            objectinputstream.close();
-            hashmap = (HashMap)obj;
-        }
-        catch (Exception exception)
-        {
-            return new HashMap();
-        }
-        return hashmap;
-    }
+	}
 
-    private static void writeIrregularsToFile(Context context, HashMap hashmap)
-    {
-        try
-        {
-            ObjectOutputStream objectoutputstream = new ObjectOutputStream(context.openFileOutput("irregular_schedules", 0));
-            objectoutputstream.writeObject(hashmap);
-            objectoutputstream.close();
-            return;
-        }
-        catch (Exception exception)
-        {
-            Toast.makeText(context, "Add irregular schedule operation failed, please try again...", 0).show();
-        }
-    }
+	public static int checkIrregular(Context context, Calendar cal) {
+		try {
+
+			// if file not found then catch returns -1
+			HashMap<Calendar, Integer> irregularSchedules = readIrregularsFromFile(context);
+			Calendar calSimple = Calendar.getInstance();
+			calSimple.clear();
+			calSimple.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH),
+					cal.get(Calendar.DATE));
+			Object scheduleCode = irregularSchedules.get(calSimple);
+			if (scheduleCode != null) {
+				return (Integer) scheduleCode;
+
+			} else {
+				return -1;
+			}
+		} catch (Exception e) {
+			return -1;
+		}
+
+	}
+
+	private static HashMap<Calendar, Integer> readIrregularsFromFile(
+			Context context) {
+		try {
+			ObjectInputStream fis = new ObjectInputStream(
+					context.openFileInput(FILENAME));
+
+			Object input = fis.readObject();
+			fis.close();
+			return (HashMap<Calendar, Integer>) input;
+		} catch (Exception e) {
+			return new HashMap<Calendar, Integer>();
+		}
+
+	}
+
+	private static void writeIrregularsToFile(Context context,
+			HashMap<Calendar, Integer> irregulars) {
+		try {
+			java.io.ObjectOutputStream stream = new java.io.ObjectOutputStream(
+					context.openFileOutput("irregular_schedules",
+							android.app.Activity.MODE_PRIVATE));
+			stream.writeObject(irregulars);
+			stream.close();
+		} catch (Exception e) {
+			Toast.makeText(
+					context,
+					"Add irregular schedule operation failed, please try again...",
+					Toast.LENGTH_SHORT).show();
+		}
+
+	}
+
+	public static int[] getScheduleTimes(Context context) {
+		Calendar now = Calendar.getInstance();
+		int[] schedule;
+		int irregularCode = checkIrregular(context, now);
+		if (irregularCode == TYPE_B) {
+			return new int[] { 490, 540, 590, 640, 690, 740, 790, 810, 860, 905 };
+		} else if ((now.get(Calendar.DAY_OF_WEEK) == Calendar.WEDNESDAY && irregularCode == -1)
+				|| irregularCode == TYPE_WED) // wednesday
+		{
+			schedule = new int[] { 490, 575, 655, 735, 775, 830, 905 };
+		} else if ((now.get(Calendar.DAY_OF_WEEK) == Calendar.THURSDAY && irregularCode == -1)
+				|| irregularCode == TYPE_THU) // Thursday
+		{
+			schedule = new int[] { 490, 575, 655, 735, 775, 855, 905 };
+		} else {
+			schedule = new int[] { 490, 540, 605, 655, 705, 755, 805, 855, 900 };
+		}
+		return schedule;
+
+	}
 }

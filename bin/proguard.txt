@@ -1,0 +1,27 @@
+# view AndroidManifest.xml #generated:32
+-keep class com.RSen.LionTime.CancelNotificationReceiver { <init>(...); }
+
+# view AndroidManifest.xml #generated:61
+-keep class com.RSen.LionTime.ChangeScheduleActivity { <init>(...); }
+
+# view AndroidManifest.xml #generated:80
+-keep class com.RSen.LionTime.MainActivity { <init>(...); }
+
+# view AndroidManifest.xml #generated:89
+-keep class com.RSen.LionTime.MyDashClock { <init>(...); }
+
+# view AndroidManifest.xml #generated:69
+-keep class com.RSen.LionTime.NewDayReceiver { <init>(...); }
+
+# view AndroidManifest.xml #generated:24
+-keep class com.RSen.LionTime.NotificationReceiver { <init>(...); }
+
+# view AndroidManifest.xml #generated:19
+-keep class com.RSen.LionTime.SettingsActivity { <init>(...); }
+
+# view AndroidManifest.xml #generated:53
+-keep class com.RSen.LionTime.ViewScheduleActivity { <init>(...); }
+
+# view AndroidManifest.xml #generated:40
+-keep class com.RSen.LionTime.Widget { <init>(...); }
+

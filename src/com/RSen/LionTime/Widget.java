@@ -1,9 +1,8 @@
-// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
-// Jad home page: http://www.geocities.com/kpdus/jad.html
-// Decompiler options: braces fieldsfirst space lnc 
-
 package com.RSen.LionTime;
 
+import java.util.Calendar;
+
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -12,79 +11,93 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
-import java.util.Calendar;
 
-// Referenced classes of package com.RSen.LionTime:
-//            TimeTillCalculator, ViewScheduleActivity, ChangeScheduleActivity
+public class Widget extends AppWidgetProvider {
 
-public class Widget extends AppWidgetProvider
-{
+	public void onUpdate(Context context, AppWidgetManager appWidgetManager,
+			int[] appWidgetIds) {
+		updateWidgets(context, appWidgetManager, appWidgetIds);
+	}
 
-    public Widget()
-    {
-    }
+	@Override
+	public void onEnabled(Context context) {
+		// TODO Auto-generated method stub
+		super.onEnabled(context);
+		ComponentName thisAppWidget = new ComponentName(
+				context.getPackageName(), getClass().getName());
+		AppWidgetManager appWidgetManager = AppWidgetManager
+				.getInstance(context);
+		int ids[] = appWidgetManager.getAppWidgetIds(thisAppWidget);
+		updateWidgets(context, appWidgetManager, ids);
+	}
 
-    private void updateWidgets(Context context, AppWidgetManager appwidgetmanager, int ai[])
-    {
-        int i = ai.length;
-        String as[] = TimeTillCalculator.getTimeTill(context);
-        int j = 0;
-        do
-        {
-            if (j >= i)
-            {
-                AlarmManager alarmmanager = (AlarmManager)context.getSystemService("alarm");
-                PendingIntent pendingintent2 = PendingIntent.getBroadcast(context, 0x1aed34, new Intent("com.RSen.LionTime.WIDGET_UPDATE"), 0);
-                Calendar calendar = Calendar.getInstance();
-                if (!as[0].equals("-1"))
-                {
-                    alarmmanager.set(1, System.currentTimeMillis() + (long)(1000 * (60 - calendar.get(13))), pendingintent2);
-                }
-                return;
-            }
-            int k = ai[j];
-            Intent intent = new Intent(context, com/RSen/LionTime/ViewScheduleActivity);
-            Intent intent1 = new Intent(context, com/RSen/LionTime/ChangeScheduleActivity);
-            PendingIntent pendingintent = PendingIntent.getActivity(context, 0, intent, 0);
-            PendingIntent pendingintent1 = PendingIntent.getActivity(context, 0, intent1, 0);
-            RemoteViews remoteviews = new RemoteViews(context.getPackageName(), 0x7f030002);
-            remoteviews.setOnClickPendingIntent(0x7f090007, pendingintent);
-            remoteviews.setOnClickPendingIntent(0x7f090008, pendingintent1);
-            String s;
-            if (!as[0].equals("-1"))
-            {
-                s = (new StringBuilder(String.valueOf(as[0]))).append(" min until ").append(as[1]).toString();
-            } else
-            {
-                s = "School is Over!";
-            }
-            remoteviews.setTextViewText(0x7f090006, s);
-            appwidgetmanager.updateAppWidget(k, remoteviews);
-            j++;
-        } while (true);
-    }
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		// TODO Auto-generated method stub
+		super.onReceive(context, intent);
+		if (intent.getAction().equals("com.RSen.LionTime.WIDGET_UPDATE")) {
+			ComponentName thisAppWidget = new ComponentName(
+					context.getPackageName(), getClass().getName());
+			AppWidgetManager appWidgetManager = AppWidgetManager
+					.getInstance(context);
+			int ids[] = appWidgetManager.getAppWidgetIds(thisAppWidget);
+			updateWidgets(context, appWidgetManager, ids);
 
-    public void onEnabled(Context context)
-    {
-        super.onEnabled(context);
-        ComponentName componentname = new ComponentName(context.getPackageName(), getClass().getName());
-        AppWidgetManager appwidgetmanager = AppWidgetManager.getInstance(context);
-        updateWidgets(context, appwidgetmanager, appwidgetmanager.getAppWidgetIds(componentname));
-    }
+		}
+	}
 
-    public void onReceive(Context context, Intent intent)
-    {
-        super.onReceive(context, intent);
-        if (intent.getAction().equals("com.RSen.LionTime.WIDGET_UPDATE"))
-        {
-            ComponentName componentname = new ComponentName(context.getPackageName(), getClass().getName());
-            AppWidgetManager appwidgetmanager = AppWidgetManager.getInstance(context);
-            updateWidgets(context, appwidgetmanager, appwidgetmanager.getAppWidgetIds(componentname));
-        }
-    }
+	private void updateWidgets(Context context,
+			AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+		final int N = appWidgetIds.length;
+		// Perform this loop procedure for each App Widget that belongs to this
+		// provider
+		String[] timeInfo = TimeTillCalculator.getTimeTill(context);
+		for (int i = 0; i < N; i++) {
+			int appWidgetId = appWidgetIds[i];
+			// Create an Intent to launch ExampleActivity
+			Intent intentView = new Intent(context, ViewScheduleActivity.class);
+			Intent intentChange = new Intent(context,
+					ChangeScheduleActivity.class);
 
-    public void onUpdate(Context context, AppWidgetManager appwidgetmanager, int ai[])
-    {
-        updateWidgets(context, appwidgetmanager, ai);
-    }
+			PendingIntent pendingIntentView = PendingIntent.getActivity(
+					context, 0, intentView, 0);
+			PendingIntent pendingIntentChange = PendingIntent.getActivity(
+					context, 0, intentChange, 0);
+
+			// Get the layout for the App Widget and attach an on-click listener
+			// to the button
+			RemoteViews views = new RemoteViews(context.getPackageName(),
+					R.layout.widget_compact);
+			views.setOnClickPendingIntent(R.id.viewScheduleWidget,
+					pendingIntentView);
+			views.setOnClickPendingIntent(R.id.changeScheduleWidget,
+					pendingIntentChange);
+			// To update a label
+			String text;
+			if (!timeInfo[0].equals("-1")) {
+				text = timeInfo[0] + " min until " + timeInfo[1];
+			} else {
+				text = "School is Over!";
+			}
+			views.setTextViewText(R.id.widget1label, text);
+			// Tell the AppWidgetManager to perform an update on the current app
+			// widget
+			appWidgetManager.updateAppWidget(appWidgetId, views);
+		}
+		// set alarm
+		AlarmManager alarmManager = (AlarmManager) context
+				.getSystemService(Activity.ALARM_SERVICE);
+		// TODO: Remove
+		// Toast.makeText(context, "Updating widget...", Toast.LENGTH_SHORT)
+		// .show();
+		PendingIntent intent = PendingIntent.getBroadcast(context, 06566464,
+				new Intent("com.RSen.LionTime.WIDGET_UPDATE"), 0);
+		Calendar now = Calendar.getInstance();
+		if (!timeInfo[0].equals("-1")) {
+			// during school set to next minute
+			alarmManager.set(AlarmManager.RTC, System.currentTimeMillis()
+					+ (60 - now.get(Calendar.SECOND)) * 1000, intent);
+		}
+		// otherwise will be called by NEW_DAY
+	}
 }

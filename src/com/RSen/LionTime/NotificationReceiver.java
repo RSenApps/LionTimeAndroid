@@ -1,9 +1,10 @@
-// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
-// Jad home page: http://www.geocities.com/kpdus/jad.html
-// Decompiler options: braces fieldsfirst space lnc 
-
 package com.RSen.LionTime;
 
+import java.util.Arrays;
+import java.util.Calendar;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -11,105 +12,112 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import java.util.Arrays;
-import java.util.Calendar;
 
-// Referenced classes of package com.RSen.LionTime:
-//            SettingsActivity, TimeTillCalculator
+public class NotificationReceiver extends BroadcastReceiver {
+	private static final int[] notificationTimes = new int[] { 0, 1, 2, 3, 4,
+			5, 6, 7, 10, 15, 20, 30 };
+	private static final int notificationIDCancellable = 127914472;
 
-public class NotificationReceiver extends BroadcastReceiver
-{
+	public NotificationReceiver() {
+	}
 
-    private static final int notificationTimes[];
+	public static int getEarliestNotification() {
+		return notificationTimes[notificationTimes.length - 1];
+	}
 
-    public NotificationReceiver()
-    {
-    }
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean(
+				"notification_activated", true)) {
+			String[] timeInfo = TimeTillCalculator.getTimeTill(context);
 
-    public static void cancelNotification(Context context)
-    {
-        ((NotificationManager)context.getSystemService("notification")).cancel(0x79fd1e8);
-    }
+			if (Arrays.binarySearch(notificationTimes,
+					Integer.parseInt(timeInfo[0])) >= 0) {
+				// if found in array
+				showNotification(context, timeInfo);
+			} else {
+				cancelNotification(context);
+			}
+			scheduleNext(context, Integer.parseInt(timeInfo[0]));
+		}
+	}
 
-    public static int getEarliestNotification()
-    {
-        return notificationTimes[-1 + notificationTimes.length];
-    }
+	public static void cancelNotification(Context context) {
+		NotificationManager notificationManager = (NotificationManager) context
+				.getSystemService(Activity.NOTIFICATION_SERVICE);
+		notificationManager.cancel(notificationIDCancellable);
+	}
 
-    private void scheduleNext(Context context, int i)
-    {
-        int j;
-        AlarmManager alarmmanager;
-        PendingIntent pendingintent;
-        j = 1;
-        alarmmanager = (AlarmManager)context.getSystemService("alarm");
-        pendingintent = PendingIntent.getBroadcast(context, 0x79fd1e8, new Intent("com.RSen.LionTime.SHOW_NOTIFICATION"), 0);
-        if (i == -1) goto _L2; else goto _L1
-_L1:
-        if (Arrays.binarySearch(notificationTimes, i - j) < 0) goto _L4; else goto _L3
-_L3:
-        int k = 1000 * Calendar.getInstance().get(13);
-        alarmmanager.set(1, (System.currentTimeMillis() - (long)k) + (long)(60000 * j), pendingintent);
-_L2:
-        return;
-_L4:
-        j++;
-        if (true) goto _L1; else goto _L5
-_L5:
-    }
+	private void scheduleNext(Context context, int timeTill) {
+		int minUntilNotification = 1;
+		long alarmTime;
+		AlarmManager alarmManager = (AlarmManager) context
+				.getSystemService(Activity.ALARM_SERVICE);
+		PendingIntent intent = PendingIntent.getBroadcast(context,
+				notificationIDCancellable, new Intent(
+						"com.RSen.LionTime.SHOW_NOTIFICATION"), 0);
 
-    private void showNotification(Context context, String as[])
-    {
-        PendingIntent pendingintent = PendingIntent.getActivity(context, 0, new Intent(context, com/RSen/LionTime/SettingsActivity), 0);
-        Notification notification;
-        AlarmManager alarmmanager;
-        PendingIntent pendingintent1;
-        if (android.os.Build.VERSION.SDK_INT >= 11)
-        {
-            notification = (new android.app.Notification.Builder(context)).setContentTitle((new StringBuilder(String.valueOf(as[0]))).append(" min").toString()).setContentText((new StringBuilder("...until ")).append(as[1]).toString()).setSmallIcon(0x7f020004).setTicker((new StringBuilder(String.valueOf(as[0]))).append(" min... until ").append(as[1]).toString()).setContentIntent(pendingintent).build();
-        } else
-        {
-            notification = new Notification(0x7f020004, (new StringBuilder(String.valueOf(as[0]))).append(" min... until ").append(as[1]).toString(), System.currentTimeMillis());
-            notification.setLatestEventInfo(context, (new StringBuilder(String.valueOf(as[0]))).append(" min").toString(), (new StringBuilder("... until ")).append(as[1]).toString(), pendingintent);
-        }
-        ((NotificationManager)context.getSystemService("notification")).notify(0x79fd1e8, notification);
-        alarmmanager = (AlarmManager)context.getSystemService("alarm");
-        pendingintent1 = PendingIntent.getBroadcast(context, 0x79fd1e8, new Intent("com.RSen.LionTime.CANCEL_NOTIFICATION"), 0);
-        alarmmanager.set(1, 30000L + System.currentTimeMillis(), pendingintent1);
-    }
+		if (timeTill != -1) // after school
+		{
+			while (Arrays.binarySearch(notificationTimes, timeTill
+					- minUntilNotification) < 0) {
+				// keep incrementing until notification time is hit
+				minUntilNotification++;
+			}
+			// Toast.makeText(context, "Notification in: " +
+			// minUntilNotification, Toast.LENGTH_SHORT).show();
+			int currentExtraMillis = Calendar.getInstance()
+					.get(Calendar.SECOND) * 1000;
+			alarmTime = System.currentTimeMillis() - currentExtraMillis + 60
+					* 1000 * minUntilNotification;
+			alarmManager.set(AlarmManager.RTC, alarmTime, intent);
+		}
+		// will be called by NewDayReceiver
 
-    public void onReceive(Context context, Intent intent)
-    {
-        if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("notification_activated", true))
-        {
-            String as[] = TimeTillCalculator.getTimeTill(context);
-            if (Arrays.binarySearch(notificationTimes, Integer.parseInt(as[0])) >= 0)
-            {
-                showNotification(context, as);
-            } else
-            {
-                cancelNotification(context);
-            }
-            scheduleNext(context, Integer.parseInt(as[0]));
-        }
-    }
+	}
 
-    static 
-    {
-        int ai[] = new int[12];
-        ai[1] = 1;
-        ai[2] = 2;
-        ai[3] = 3;
-        ai[4] = 4;
-        ai[5] = 5;
-        ai[6] = 6;
-        ai[7] = 7;
-        ai[8] = 10;
-        ai[9] = 15;
-        ai[10] = 20;
-        ai[11] = 30;
-        notificationTimes = ai;
-    }
+	@SuppressLint("NewApi")
+	private void showNotification(Context context, String[] timeInfo) {
+		Intent notiIntent = new Intent(context, SettingsActivity.class);
+		PendingIntent pIntent = PendingIntent.getActivity(context, 0,
+				notiIntent, 0);
+		Notification noti;
+
+		// Build notification
+		if (android.os.Build.VERSION.SDK_INT >= 11) {
+			noti = new Notification.Builder(context)
+					.setContentTitle(timeInfo[0] + " min")
+					.setContentText("...until " + timeInfo[1])
+					.setSmallIcon(R.drawable.ic_launcher)
+					.setTicker(timeInfo[0] + " min... until " + timeInfo[1])
+					.setContentIntent(pIntent).build();
+			/*
+			 * .addAction(R.drawable.icon, "Call", pIntent)
+			 * .addAction(R.drawable.icon, "More", pIntent)
+			 * .addAction(R.drawable.icon, "And more", pIntent).build();
+			 */
+		} else {
+			noti = new Notification(R.drawable.ic_launcher, timeInfo[0]
+					+ " min... until " + timeInfo[1],
+					System.currentTimeMillis());
+			noti.setLatestEventInfo(context, timeInfo[0] + " min", "... until "
+					+ timeInfo[1], pIntent);
+		}
+		NotificationManager notificationManager = (NotificationManager) context
+				.getSystemService(context.NOTIFICATION_SERVICE);
+
+		notificationManager.notify(notificationIDCancellable, noti);
+		// schedule cancel in 30 seconds
+		AlarmManager alarmManager = (AlarmManager) context
+				.getSystemService(Activity.ALARM_SERVICE);
+
+		PendingIntent intent = PendingIntent.getBroadcast(context,
+				notificationIDCancellable, new Intent(
+						"com.RSen.LionTime.CANCEL_NOTIFICATION"), 0);
+
+		alarmManager.set(AlarmManager.RTC,
+				System.currentTimeMillis() + 30 * 1000, intent);
+
+	}
 }

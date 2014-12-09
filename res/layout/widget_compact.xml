@@ -1,9 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout android:gravity="center" android:orientation="vertical" android:background="@drawable/background" android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_margin="4.0dip"
-  xmlns:android="http://schemas.android.com/apk/res/android">
-    <TextView android:textAppearance="?android:textAppearanceLarge" android:id="@id/widget1label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Updating, please wait..." />
-    <LinearLayout android:gravity="center_vertical" android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content">
-        <Button android:textAppearance="?android:textAppearanceSmall" android:id="@id/viewScheduleWidget" android:layout_width="wrap_content" android:layout_height="fill_parent" android:text="View Schedule" />
-        <Button android:textAppearance="?android:textAppearanceSmall" android:id="@id/changeScheduleWidget" android:layout_width="wrap_content" android:layout_height="fill_parent" android:text="Switch Schedule" />
-    </LinearLayout>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:gravity="center"
+  android:layout_margin="4dp"
+  android:background="@drawable/background">
+    <TextView android:id="@+id/widget1label" android:layout_height="wrap_content" android:text="Updating, please wait..." android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="wrap_content"/>
+	<LinearLayout android:orientation="horizontal" android:layout_width="wrap_content"
+	    android:layout_height="wrap_content" android:gravity="center_vertical">
+
+		<Button
+		    android:id="@+id/viewScheduleWidget"
+		    android:layout_width="wrap_content"
+		    android:layout_height="match_parent"
+		    android:text="View Schedule"
+		    android:textAppearance="?android:attr/textAppearanceSmall" />
+
+		<Button
+		    android:id="@+id/changeScheduleWidget"
+		    android:layout_width="wrap_content"
+		    android:layout_height="match_parent"
+		    android:text="Switch Schedule"
+		    android:textAppearance="?android:attr/textAppearanceSmall" />
+
+	</LinearLayout>
 </LinearLayout>

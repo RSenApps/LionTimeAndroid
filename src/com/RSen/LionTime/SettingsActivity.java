@@ -1,57 +1,89 @@
-// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
-// Jad home page: http://www.geocities.com/kpdus/jad.html
-// Decompiler options: braces fieldsfirst space lnc 
-
 package com.RSen.LionTime;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
-public class SettingsActivity extends PreferenceActivity
-{
+/**
+ * A {@link PreferenceActivity} that presents a set of application settings. On
+ * handset devices, settings are presented as a single list. On tablets,
+ * settings are split by category, with category headers shown to the left of
+ * the list of settings.
+ * <p>
+ * See <a href="http://developer.android.com/design/patterns/settings.html">
+ * Android Design: Settings</a> for design guidelines and the <a
+ * href="http://developer.android.com/guide/topics/ui/settings.html">Settings
+ * API Guide</a> for more information on developing a Settings UI.
+ */
+public class SettingsActivity extends PreferenceActivity {
+	@Override
+	protected void onPostCreate(Bundle savedInstanceState) {
+		super.onPostCreate(savedInstanceState);
 
-    private static android.preference.Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new android.preference.Preference.OnPreferenceChangeListener() {
+		setupSimplePreferencesScreen();
+	}
 
-        public boolean onPreferenceChange(Preference preference, Object obj)
-        {
-            preference.setSummary(obj.toString());
-            if (((Boolean)obj).booleanValue())
-            {
-                preference.getContext().sendBroadcast(new Intent("com.RSen.LionTime.SHOW_NOTIFICATION"));
-            } else
-            {
-                preference.getContext().sendBroadcast(new Intent("com.RSen.LionTime.CANCEL_NOTIFICATION"));
-            }
-            return true;
-        }
+	/**
+	 * Shows the simplified settings UI if the device configuration if the
+	 * device configuration dictates that a simplified, single-pane UI should be
+	 * shown.
+	 */
+	private void setupSimplePreferencesScreen() {
+		// Add 'general' preferences.
+		addPreferencesFromResource(R.xml.pref_general);
 
-    };
+		// Bind the summaries of EditText/List/Dialog/Ringtone preferences to
+		// their values. When their values change, their summaries are updated
+		// to reflect the new value, per the Android Design guidelines.
+		bindPreferenceSummaryToValue(findPreference("notification_activated"));
+	}
 
-    public SettingsActivity()
-    {
-    }
+	/**
+	 * A preference value change listener that updates the preference's summary
+	 * to reflect its new value.
+	 */
+	private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
+		@Override
+		public boolean onPreferenceChange(Preference preference, Object value) {
+			String stringValue = value.toString();
 
-    private static void bindPreferenceSummaryToValue(Preference preference)
-    {
-        preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
-        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference, Boolean.valueOf(PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getBoolean(preference.getKey(), true)));
-    }
+			// For all other preferences, set the summary to the value's
+			// simple string representation.
+			preference.setSummary(stringValue);
+			if ((Boolean) value) {
+				preference.getContext().sendBroadcast(
+						new Intent("com.RSen.LionTime.SHOW_NOTIFICATION"));
+			} else {
+				preference.getContext().sendBroadcast(
+						new Intent("com.RSen.LionTime.CANCEL_NOTIFICATION"));
+			}
+			return true;
+		}
+	};
 
-    private void setupSimplePreferencesScreen()
-    {
-        addPreferencesFromResource(0x7f040000);
-        bindPreferenceSummaryToValue(findPreference("notification_activated"));
-    }
+	/**
+	 * Binds a preference's summary to its value. More specifically, when the
+	 * preference's value is changed, its summary (line of text below the
+	 * preference title) is updated to reflect the value. The summary is also
+	 * immediately updated upon calling this method. The exact display format is
+	 * dependent on the type of preference.
+	 * 
+	 * @see #sBindPreferenceSummaryToValueListener
+	 */
+	private static void bindPreferenceSummaryToValue(Preference preference) {
+		// Set the listener to watch for value changes.
+		preference
+				.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
 
-    protected void onPostCreate(Bundle bundle)
-    {
-        super.onPostCreate(bundle);
-        setupSimplePreferencesScreen();
-    }
+		// Trigger the listener immediately with the preference's
+		// current value.
+		sBindPreferenceSummaryToValueListener.onPreferenceChange(
+				preference,
+				PreferenceManager.getDefaultSharedPreferences(
+						preference.getContext()).getBoolean(
+						preference.getKey(), true));
+	}
 
 }

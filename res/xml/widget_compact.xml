@@ -1,3 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<appwidget-provider android:minWidth="294.0dip" android:minHeight="36.0dip" android:initialLayout="@layout/widget_compact" android:widgetCategory="0x3"
-  xmlns:android="http://schemas.android.com/apk/res/android" />
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="294dp"
+    android:minHeight="36dp"
+     android:widgetCategory="keyguard|home_screen"
+    android:initialLayout="@layout/widget_compact">
+</appwidget-provider>

@@ -1,107 +1,92 @@
-// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
-// Jad home page: http://www.geocities.com/kpdus/jad.html
-// Decompiler options: braces fieldsfirst space lnc 
-
 package com.RSen.LionTime;
 
-import android.content.Context;
 import java.util.Calendar;
 
-// Referenced classes of package com.RSen.LionTime:
-//            Schedule
+import android.content.Context;
 
-public class TimeTillCalculator
-{
+public class TimeTillCalculator {
 
-    public static String[] getTimeTill(Context context)
-    {
-        int i;
-        int j;
-        String s;
-        int ai[];
-        int k;
-        int l;
-        Calendar calendar = Calendar.getInstance();
-        i = 60 * calendar.get(11) + calendar.get(12);
-        j = -1;
-        s = "Period ";
-        ai = Schedule.getScheduleTimes(context);
-        k = Schedule.getScheduleType(context, calendar);
-        if (k == 4)
-        {
-            return (new String[] {
-                "-1", "No School"
-            });
-        }
-        l = 0;
-_L5:
-        if (l < ai.length) goto _L2; else goto _L1
-_L1:
-        String as1[] = new String[2];
-        as1[0] = (new StringBuilder(String.valueOf(j))).toString();
-        as1[1] = s;
-        return as1;
-_L2:
-        if (ai[l] <= i)
-        {
-            break; /* Loop/switch isn't completed */
-        }
-        j = ai[l] - i;
-        if (k == 3)
-        {
-            String as[] = {
-                "1", "2", "3", "4", "5", "6A", "6B", "7", "8", "End of School"
-            };
-            if (l == -1 + as.length)
-            {
-                s = as[l];
-            } else
-            {
-                s = (new StringBuilder(String.valueOf(s))).append(as[l]).toString();
-            }
-        } else
-        if (k == 1)
-        {
-            String as2[] = {
-                "1", "3", "5", "Lunch", "Assembly", "7", "End of School"
-            };
-            if (l == -1 + as2.length)
-            {
-                s = as2[l];
-            } else
-            {
-                s = (new StringBuilder(String.valueOf(s))).append(as2[l]).toString();
-            }
-        } else
-        if (k == 2)
-        {
-            String as3[] = {
-                "2", "4", "6", "Lunch", "8", "Activity", "End of School"
-            };
-            if (l == -1 + as3.length)
-            {
-                s = as3[l];
-            } else
-            {
-                s = (new StringBuilder(String.valueOf(s))).append(as3[l]).toString();
-            }
-        } else
-        if (l + 1 > 8)
-        {
-            s = "End of School";
-        } else
-        if (l == 2 && 590 - i > 0)
-        {
-            j = 590 - i;
-            s = "Advisory";
-        } else
-        {
-            s = (new StringBuilder(String.valueOf(s))).append(l + 1).toString();
-        }
-        if (true) goto _L1; else goto _L3
-_L3:
-        l++;
-        if (true) goto _L5; else goto _L4
-_L4:
-    }
+	public static String[] getTimeTill(Context context) {
+
+		int[] schedule;
+		// to change schedule us now.getDate() to specify changed schedules,
+		// remember to change periods below!
+		// regular M,T,F schedule = new Array(490,540,605,655,705,755,805,855,
+		// 900);
+		// regular W schedule = new Array(490, 575, 655, 735, 775, 830,905);
+		// regular Th schedule = new Array(490, 575, 655, 735, 775, 855,905);
+		// B schedule = new Array(490,540,590,640,690,740,790,810,860, 905);
+		// B periods var periods = new Array("1","2","3","4", "5", "6A", "6B",
+		// "7", "8", "End of School");
+		Calendar now = Calendar.getInstance();
+
+		int nowMin = now.get(Calendar.HOUR_OF_DAY) * 60
+				+ now.get(Calendar.MINUTE);
+		int timeTill = -1;
+		String nextPeriod = "Period ";
+
+		schedule = Schedule.getScheduleTimes(context);
+		int scheduleType = Schedule.getScheduleType(context, now);
+		if (scheduleType == Schedule.TYPE_NOSCHOOL) {
+			return new String[] { "-1", "No School" };
+		}
+		for (int ii = 0; ii < schedule.length; ii++) {
+			if (schedule[ii] > nowMin) {
+				timeTill = schedule[ii] - nowMin;
+
+				if (scheduleType == Schedule.TYPE_B) {
+					String[] periods = new String[] { "1", "2", "3", "4", "5",
+							"6A", "6B", "7", "8", "End of School" };
+					if (ii == periods.length - 1) // End of school != Period end
+													// of school
+					{
+						nextPeriod = periods[ii];
+					} else {
+						nextPeriod += periods[ii];
+					}
+
+				} else if (scheduleType == Schedule.TYPE_WED) {
+					String[] periods = new String[] { "1", "3", "5", "Lunch",
+							"Assembly", "7", "End of School" };
+					if (ii == periods.length - 1) // End of school != Period end
+													// of school
+					{
+						nextPeriod = periods[ii];
+					} else {
+						nextPeriod += periods[ii];
+					}
+
+				} else if (scheduleType == Schedule.TYPE_THU) {
+					String[] periods = new String[] { "2", "4", "6", "Lunch",
+							"8", "Activity", "End of School" };
+					if (ii == periods.length - 1) // End of school != Period end
+													// of school
+					{
+						nextPeriod = periods[ii];
+					} else {
+						nextPeriod += periods[ii];
+					}
+				}
+				// TYPE_REG
+				else if (ii + 1 > 8) {
+					nextPeriod = "End of School";
+				}
+				// advisory
+				else if (ii == 2 && 590 - nowMin > 0) {
+					timeTill = 590 - nowMin;
+					nextPeriod = "Advisory";
+				}
+
+				else {
+					nextPeriod += ii + 1;
+				}
+				break;
+			}
+
+		}
+
+		String[] returnArray = new String[] { timeTill + "", nextPeriod };
+		return returnArray;
+	}
+
 }

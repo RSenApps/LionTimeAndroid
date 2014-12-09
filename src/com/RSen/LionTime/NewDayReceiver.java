@@ -1,9 +1,8 @@
-// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
-// Jad home page: http://www.geocities.com/kpdus/jad.html
-// Decompiler options: braces fieldsfirst space lnc 
-
 package com.RSen.LionTime;
 
+import java.util.Calendar;
+
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -13,57 +12,65 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import java.util.Calendar;
 
-// Referenced classes of package com.RSen.LionTime:
-//            Schedule, ViewScheduleActivity, NotificationReceiver, CheckScheduleUpdates
+public class NewDayReceiver extends BroadcastReceiver {
 
-public class NewDayReceiver extends BroadcastReceiver
-{
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		//this is because the widget must be updated when time is set, but android syncs time leading to multiple updates
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+		String lastChecked = prefs.getString("lastChecked", "");
+		Calendar now = Calendar.getInstance();
+		String nowString = "Y" + now.get(Calendar.YEAR) + "M" + now.get(Calendar.MONTH) + "D" + now.get(Calendar.DATE);
+		if (!lastChecked.equals(nowString))
+		{
+			CheckScheduleUpdates.checkScheduleUpdates(context);
+			Schedule.cleanIrregularSchedules(context);
+			prefs.edit().putString("lastChecked", nowString).commit();
+			notifyIfIrregular(context);
+			scheduleNextDay(context);
+		}
+		
+		context.sendBroadcast(new Intent("com.RSen.LionTime.SHOW_NOTIFICATION"));
+		context.sendBroadcast(new Intent("com.RSen.LionTime.WIDGET_UPDATE"));
+		
+	}
 
-    public NewDayReceiver()
-    {
-    }
+	private void notifyIfIrregular(Context context) {
+		int irregularCode = Schedule.checkIrregular(context,
+				Calendar.getInstance());
+		if (irregularCode != -1) // regular schedule
+		{
+			NotificationManager notificationManager = (NotificationManager) context
+					.getSystemService(Activity.NOTIFICATION_SERVICE);
+			Notification notification = new Notification();
+			notification.icon = R.drawable.ic_launcher;
+			String scheduleString = Schedule.getReadableScheduleType(context,
+					irregularCode);
+			notification.tickerText = "Today is a " + scheduleString
+					+ " schedule";
+			notification.setLatestEventInfo(context, "Schedule Update",
+					"Today is a " + scheduleString + " schedule", PendingIntent
+							.getActivity(context, 36546436, new Intent(context,
+									ViewScheduleActivity.class),
+									Intent.FLAG_ACTIVITY_NEW_TASK));
+			notificationManager.notify(154501215, notification);
+		}
+	}
 
-    private void notifyIfIrregular(Context context)
-    {
-        int i = Schedule.checkIrregular(context, Calendar.getInstance());
-        if (i != -1)
-        {
-            NotificationManager notificationmanager = (NotificationManager)context.getSystemService("notification");
-            Notification notification = new Notification();
-            notification.icon = 0x7f020004;
-            String s = Schedule.getReadableScheduleType(context, i);
-            notification.tickerText = (new StringBuilder("Today is a ")).append(s).append(" schedule").toString();
-            notification.setLatestEventInfo(context, "Schedule Update", (new StringBuilder("Today is a ")).append(s).append(" schedule").toString(), PendingIntent.getActivity(context, 0x22da784, new Intent(context, com/RSen/LionTime/ViewScheduleActivity), 0x10000000));
-            notificationmanager.notify(0x935805f, notification);
-        }
-    }
-
-    private void scheduleNextDay(Context context)
-    {
-        AlarmManager alarmmanager = (AlarmManager)context.getSystemService("alarm");
-        PendingIntent pendingintent = PendingIntent.getBroadcast(context, 0xbf5ed8, new Intent("com.RSen.LionTime.NEW_DAY"), 0);
-        alarmmanager.cancel(pendingintent);
-        Calendar calendar = Calendar.getInstance();
-        alarmmanager.set(1, (long)(1000 * (60 * (((60 + 60 * (-1 + (24 - calendar.get(11)))) - calendar.get(12)) + (490 - NotificationReceiver.getEarliestNotification())))) + System.currentTimeMillis(), pendingintent);
-    }
-
-    public void onReceive(Context context, Intent intent)
-    {
-        SharedPreferences sharedpreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        String s = sharedpreferences.getString("lastChecked", "");
-        Calendar calendar = Calendar.getInstance();
-        String s1 = (new StringBuilder("Y")).append(calendar.get(1)).append("M").append(calendar.get(2)).append("D").append(calendar.get(5)).toString();
-        if (!s.equals(s1))
-        {
-            CheckScheduleUpdates.checkScheduleUpdates(context);
-            Schedule.cleanIrregularSchedules(context);
-            sharedpreferences.edit().putString("lastChecked", s1).commit();
-            notifyIfIrregular(context);
-            scheduleNextDay(context);
-        }
-        context.sendBroadcast(new Intent("com.RSen.LionTime.SHOW_NOTIFICATION"));
-        context.sendBroadcast(new Intent("com.RSen.LionTime.WIDGET_UPDATE"));
-    }
+	private void scheduleNextDay(Context context) {
+		AlarmManager alarmManager = (AlarmManager) context
+				.getSystemService(Activity.ALARM_SERVICE);
+		PendingIntent intent = PendingIntent.getBroadcast(context, 12541656,
+				new Intent("com.RSen.LionTime.NEW_DAY"), 0);
+		alarmManager.cancel(intent);
+		Calendar now = Calendar.getInstance();
+		int minUntilEndOfDay = (24 - now.get(Calendar.HOUR_OF_DAY) - 1) * 60
+				+ 60 - now.get(Calendar.MINUTE);
+		int minUntilSchoolStartFromMidnight = 8 * 60 + 10 - NotificationReceiver
+				.getEarliestNotification();
+		long alarmTime = (minUntilEndOfDay + minUntilSchoolStartFromMidnight)
+				* 60 * 1000 + System.currentTimeMillis();
+		alarmManager.set(AlarmManager.RTC, alarmTime, intent);
+	}
 }
